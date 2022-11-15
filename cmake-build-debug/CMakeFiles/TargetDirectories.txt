@@ -1,0 +1,3 @@
+/Users/tang/Documents/University/block-img-zhangwenbo/cmake-build-debug/CMakeFiles/block_img_zhangwenbo.dir
+/Users/tang/Documents/University/block-img-zhangwenbo/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/tang/Documents/University/block-img-zhangwenbo/cmake-build-debug/CMakeFiles/rebuild_cache.dir
