@@ -1,10 +1,7 @@
 ﻿#include <stdio.h>
-#include <pbc.h>
-#include <pbc_test.h>
-#include <pbc_time.h>
-#include "hashlibpp.h"
+#include <pbc/pbc.h>
+#include "hashlibpp-master/build/include/hashlibpp.h"
 #include <iostream>
-#include <string.h>
 #include <stdlib.h>
 #include <vector>
 #include <set>
@@ -293,60 +290,6 @@ void getParam()
     fclose(fp);
 }
 
-void inputParam()
-{
-    //输入数据
-   printf("输入m的值：");
-   scanf("%d", &m);
-   printf("输入l的值：");
-   scanf("%d", &l);
-   printf("输入m个图片的文件名：\n");
-   for (int i = 0; i < m; i++) {
-       scanf("%s", filename[i]);
-   }
-   printf("输入id：\n");
-   scanf("%s", id);
-   printf("输入供应商公钥：\n");
-   scanf("%s", seller);
-   printf("输入购买者公钥：\n");
-   scanf("%s", buyer);
-   printf("输入时间戳：\n");
-   scanf("%s", times);
-}
-
-void writeSigns()
-{
-    FILE* fp;
-    for (int i = 0; i < m; i++) {    
-        char signfile[50], e_str[500];
-        sprintf(signfile, "./signs/%04d.txt", i);
-        fp = fopen(signfile, "w");
-        element_snprint(e_str, 500, sigma_i[i]);
-        fprintf(fp, "%s", e_str);
-        fclose(fp);
-    }    
-
-    for (int i = 0; i < N; i++) {
-        char e_str[500];
-        fp = fopen("g.txt", "a");
-        element_snprint(e_str, 500, g[i]);
-        fprintf(fp, "%s\n", e_str);
-        fclose(fp);
-    }
-
-    char e_str2[500];
-    fp = fopen("h.txt", "w");
-    element_snprint(e_str2, 500, h);
-    fprintf(fp, "%s\n", e_str2);
-    fclose(fp);
-
-    char e_str[500];
-    fp = fopen("u.txt", "w");
-    element_snprint(e_str, 500, u);
-    fprintf(fp, "%s\n", e_str);
-    fclose(fp);
-}
-
 int main(int argc, char** argv) {
 
     //获取数据
@@ -403,6 +346,6 @@ int main(int argc, char** argv) {
     }
     t7 = clock();   
     printf("verify2: %lf\n", (double)(t7- t6) / CLOCKS_PER_SEC);
-
+    printf("total time： %lf\n", (double)(t7 - t0) / CLOCKS_PER_SEC );
     return 0;
 }

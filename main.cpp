@@ -1,6 +1,5 @@
 #include <iostream>
-//#include"Sign.cpp"
-#include "yuanli.c"
+#include"Sign.cpp"
 
 //int main(void) {
 //
