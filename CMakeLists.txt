@@ -13,5 +13,5 @@ if(MSVC)
     add_definitions(_CRT_SECURE_NO_WARNINGS)
 endif()
 
-add_executable(block_img_zhangwenbo main.cpp)
+add_executable(block_img_zhangwenbo main.cpp sign.cpp)
 #target_link_libraries(block_img_zhangwenbo pbc gmp libgmp)

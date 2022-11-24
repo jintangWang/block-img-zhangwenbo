@@ -1,4 +1,4 @@
-﻿#include <stdio.h>
+#include <stdio.h>
 #include <pbc/pbc.h>
 #include "hashlibpp-master/build/include/hashlibpp.h"
 #include <iostream>
@@ -7,7 +7,7 @@
 #include <set>
 #include <time.h>
 using namespace std;
-const int MAX = 10020, MAX_M = 1010;
+const int MAX = 10020, MAX_M = 10100;
 int n = 9000;
 char id[30], seller[100], buyer[100], times[100], info[400], filename[MAX_M][30];
 int m, l, N;
@@ -68,7 +68,7 @@ string get_hash(char* s)
     return str;
 }
 
-//用于初始化pairing, par(参数param), g[N], sigma, sigma2, sigma_i[m], 
+//用于初始化pairing, par(参数param), g[N], sigma, sigma2, sigma_i[m],
 //h, u, gama1, gama2, alpha, sk, beta[l], y[l]
 void init()
 {
@@ -151,7 +151,7 @@ void Setup(element_t g0[MAX], element_t h0, element_t u0, element_t sk0, int N)
     for (int i = 0; i < N; i++) {//g[N]
         element_random(g0[i]);
     }
-   
+
     element_random(h0); //h
 
     //2.  Choose α(random) ← Fp, and set u : = h^α.
@@ -165,7 +165,8 @@ void Setup(element_t g0[MAX], element_t h0, element_t u0, element_t sk0, int N)
 //给单独一张图片签名
 void Sign(element_t sigma0, element_t sk, char* id, int m, int index)
 {
-    //Given a secret key SK = α, an identifier id ∈ {0, 1}^k , an integer m indicating the, dimension of the space 
+    cout << "sign:" << index << endl;
+    //Given a secret key SK = α, an identifier id ∈ {0, 1}^k , an integer m indicating the, dimension of the space
     //being signed, and a vector v ∈ F N p , this algorithm sets n := N − m and outputs the signature σ
     //σ := (H(id, 1)^vn+1*……*H(id, m)^vn+m * g1^v1*……*gn^vn)^α
     element_t  sigma_h, sigma_g, sigma_hg, h_tmp, g_tmp;
@@ -211,6 +212,7 @@ void Combine(element_t sigma0, element_t g[MAX], element_t h, element_t u, eleme
         int choose = choosed[i];
         element_t temp;
         element_init_G1(temp, pairing);
+        // 公式 3，temp 是得出的值
         element_pow_zn(temp, sigma_i[choose], beta[i]);
         if (i == 0)
             element_set(sigma0, temp);
@@ -221,7 +223,7 @@ void Combine(element_t sigma0, element_t g[MAX], element_t h, element_t u, eleme
 
 void Verify(element_t g[MAX], element_t h, element_t u, char* id, int m, element_t y[MAX], element_t sigma_)
 {
-    //Given a public key PK = (g1, . . . , gN , h, u), an identifier id, an integer m indicating the dimension of the space 
+    //Given a public key PK = (g1, . . . , gN , h, u), an identifier id, an integer m indicating the dimension of the space
     //being signed, a signature σ, and a vector y ∈ F N p , set n := N − m
     //define γ1(PK, σ) = e (σ, h) and γ2(PK, id, m, y) = e(H(id, 1)^yn+1*……*H(id, m)^yn+m * g1^y1*……*gn^yn, u)
     element_t sigma_h, sigma_g, h_tmp, g_tmp, hash_out_i;
@@ -235,7 +237,7 @@ void Verify(element_t g[MAX], element_t h, element_t u, char* id, int m, element
 
 
     //get sigma_h = H(id, 1)^yn+1*……*H(id, m)^yn+m
-    for (int i = 0; i < m; i++) {        
+    for (int i = 0; i < m; i++) {
         char s[400];
         sprintf(s, "%s%s%s%s%d", id, seller, buyer, times, i);
         string str = get_hash(s);
@@ -271,13 +273,13 @@ void Verify(element_t g[MAX], element_t h, element_t u, char* id, int m, element
     element_pairing(gama2, sigma2, u);
 
     //If γ1(PK, σ) = γ2(PK, id, m, y) this algorithm outputs 1; otherwise it outputs 0.
-    cout << "result: " << !element_cmp(gama1, gama2) << endl;
+    cout << "verify result: " << !element_cmp(gama1, gama2) << endl;
 }
 
 void getParam()
 {
     FILE* fp;
-    fp = fopen("param800.txt", "r");
+    fp = fopen("paramVideoFrame.txt", "r");
     fscanf(fp, "%d", &m);
     fscanf(fp, "%d", &l);
     for (int i = 0; i < m; i++) {
@@ -325,27 +327,6 @@ int main(int argc, char** argv) {
     t3 = clock();
     printf("sign: %lf\n", (double)(t3 - t2) / CLOCKS_PER_SEC);
 
-    //组合图片签名
-    cout << "Combine..." << endl;
-    Combine(sigma, g, h, u, beta, sigma_i);
-    t4 = clock();
-    printf("combine: %lf\n", (double)(t4 - t3) / CLOCKS_PER_SEC);
-
-    //验证
-    cout << "Verify..." << endl;
-    Verify(g, h, u, id, m, y, sigma);
-    t5 = clock();
-    printf("verify: %lf\n", (double)(t5 - t4) / CLOCKS_PER_SEC);
-
-    //writeSigns();
-
-    cout << "Verify2" << endl;
-    t6 = clock();
-    for (int i = 0; i < m; i++) {
-        Verify(g, h, u, id, m, v[i], sigma_i[i]);
-    }
-    t7 = clock();   
-    printf("verify2: %lf\n", (double)(t7- t6) / CLOCKS_PER_SEC);
-    printf("total time： %lf\n", (double)(t7 - t0) / CLOCKS_PER_SEC );
+    printf("total time： %lf\n", (double)(t3 - t0) / CLOCKS_PER_SEC );
     return 0;
 }

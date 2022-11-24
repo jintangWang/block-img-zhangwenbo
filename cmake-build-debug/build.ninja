@@ -53,6 +53,13 @@ build CMakeFiles/block_img_zhangwenbo.dir/main.cpp.o: CXX_COMPILER__block_img_zh
   OBJECT_DIR = CMakeFiles/block_img_zhangwenbo.dir
   OBJECT_FILE_DIR = CMakeFiles/block_img_zhangwenbo.dir
 
+build CMakeFiles/block_img_zhangwenbo.dir/sign.cpp.o: CXX_COMPILER__block_img_zhangwenbo_Debug /Users/tang/Documents/University/block-img-zhangwenbo/sign.cpp || cmake_object_order_depends_target_block_img_zhangwenbo
+  DEP_FILE = CMakeFiles/block_img_zhangwenbo.dir/sign.cpp.o.d
+  FLAGS = -g -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.0.sdk -std=gnu++14
+  INCLUDES = -I/usr/local/include -I/usr/local/include/pbc -I/Users/tang/Documents/University/block-img-zhangwenbo/hashlibpp-master/build/include
+  OBJECT_DIR = CMakeFiles/block_img_zhangwenbo.dir
+  OBJECT_FILE_DIR = CMakeFiles/block_img_zhangwenbo.dir
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target block_img_zhangwenbo
@@ -61,7 +68,7 @@ build CMakeFiles/block_img_zhangwenbo.dir/main.cpp.o: CXX_COMPILER__block_img_zh
 #############################################
 # Link the executable block_img_zhangwenbo
 
-build block_img_zhangwenbo: CXX_EXECUTABLE_LINKER__block_img_zhangwenbo_Debug CMakeFiles/block_img_zhangwenbo.dir/main.cpp.o
+build block_img_zhangwenbo: CXX_EXECUTABLE_LINKER__block_img_zhangwenbo_Debug CMakeFiles/block_img_zhangwenbo.dir/main.cpp.o CMakeFiles/block_img_zhangwenbo.dir/sign.cpp.o
   FLAGS = -g -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.0.sdk
   OBJECT_DIR = CMakeFiles/block_img_zhangwenbo.dir
   POST_BUILD = :
