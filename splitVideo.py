@@ -16,6 +16,7 @@ def video2frame(videos_path, frames_save_path, time_interval):
         count += 1
         if count % time_interval == 0:
             cv2.imencode('.jpg', image)[1].tofile(frames_save_path + "/frame%d.jpg" % count)
+            # cv2.imencode('.jpg', image)[1].tofile(frames_save_path + "/{:0>4d}.jpg".format(count))
         # if count == 20:
         #   break
     print(count)

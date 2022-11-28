@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <pbc/pbc.h>
+#include <pbc/pbc_field.h>
 #include "hashlibpp-master/build/include/hashlibpp.h"
 #include <iostream>
 #include <stdlib.h>
@@ -221,65 +222,9 @@ void Combine(element_t sigma0, element_t g[MAX], element_t h, element_t u, eleme
     }
 }
 
-void Verify(element_t g[MAX], element_t h, element_t u, char* id, int m, element_t y[MAX], element_t sigma_)
-{
-    //Given a public key PK = (g1, . . . , gN , h, u), an identifier id, an integer m indicating the dimension of the space
-    //being signed, a signature σ, and a vector y ∈ F N p , set n := N − m
-    //define γ1(PK, σ) = e (σ, h) and γ2(PK, id, m, y) = e(H(id, 1)^yn+1*……*H(id, m)^yn+m * g1^y1*……*gn^yn, u)
-    element_t sigma_h, sigma_g, h_tmp, g_tmp, hash_out_i;
-    element_init_G1(sigma_h, pairing);
-    element_init_G1(sigma_g, pairing);
-    element_init_G1(h_tmp, pairing);
-    element_init_G1(g_tmp, pairing);
-    element_init_G1(hash_out_i, pairing);
-    element_set1(gama1);
-    element_set1(gama2);
-
-
-    //get sigma_h = H(id, 1)^yn+1*……*H(id, m)^yn+m
-    for (int i = 0; i < m; i++) {
-        char s[400];
-        sprintf(s, "%s%s%s%s%d", id, seller, buyer, times, i);
-        string str = get_hash(s);
-        int len = str.length();
-        char* p = new char[len];
-        str.copy(p, len, 0);
-        void* out = p;
-        element_from_hash(hash_out_i, out, 256);
-        element_pow_zn(h_tmp, hash_out_i, y[i + n]);
-        if (i == 0)
-            element_set(sigma_h, h_tmp);
-        else {
-            element_mul(sigma_h, sigma_h, h_tmp);
-        }
-    }
-
-    //get sigma_g = g1^y1*……*gn^yn
-    for (int i = 0; i < n; i++) {
-        element_pow_zn(g_tmp, g[i], y[i]);
-        if (i == 0)
-            element_set(sigma_g, g_tmp);
-        else
-            element_mul(sigma_g, sigma_g, g_tmp);
-    }
-
-    //get sigma2 = sigma_h * sigma_g = H(id, 1)^yn+1*……*H(id, m)^yn+m * g1^y1*……*gn^yn
-    element_set1(sigma2);
-    element_mul(sigma2, sigma_h, sigma_g);
-
-    //get γ1(PK, σ) = e (σ, h)
-    element_pairing(gama1, sigma_, h);
-    //get γ2(PK, id, m, y) = e(σ2, u)
-    element_pairing(gama2, sigma2, u);
-
-    //If γ1(PK, σ) = γ2(PK, id, m, y) this algorithm outputs 1; otherwise it outputs 0.
-    cout << "verify result: " << !element_cmp(gama1, gama2) << endl;
-}
-
-void getParam()
-{
+void getParam() {
     FILE* fp;
-    fp = fopen("paramVideoFrame.txt", "r");
+    fp = fopen("param100.txt", "r");
     fscanf(fp, "%d", &m);
     fscanf(fp, "%d", &l);
     for (int i = 0; i < m; i++) {
@@ -292,11 +237,37 @@ void getParam()
     fclose(fp);
 }
 
+// 保存签名的一些参数，以备后面 Verify 使用
+void SaveParam() {
+    FILE * fp;
+
+    unsigned char *sigma_prime;
+
+    element_to_bytes_compressed(sigma_prime, sigma);
+
+
+    fp = fopen ("signedParam.txt", "w+");
+//    fprintf(fp, "%s", g);
+//    fprintf(fp, "%s", h);
+//    fprintf(fp, "%s", u);
+//    fprintf(fp, "%s", id);
+//    fprintf(fp, "%s", m);
+//    fprintf(fp, "%s", y);
+    fprintf(fp, "%s", sigma_prime);
+    cout << "save sigma param" << endl;
+
+//    fprintf(fp, "%s", pairing);
+//    fprintf(fp, "%s", seller);
+//    fprintf(fp, "%s", buyer);
+//    fprintf(fp, "%s", times);
+
+    fclose(fp);
+}
+
 int main(int argc, char** argv) {
 
     //获取数据
     getParam();
-    //inputParam();
 
     //计时
     clock_t t0, t1, t2, t3, t4, t5, t6, t7;
@@ -327,6 +298,14 @@ int main(int argc, char** argv) {
     t3 = clock();
     printf("sign: %lf\n", (double)(t3 - t2) / CLOCKS_PER_SEC);
 
-    printf("total time： %lf\n", (double)(t3 - t0) / CLOCKS_PER_SEC );
+    //组合图片签名
+    cout << "Combine..." << endl;
+    Combine(sigma, g, h, u, beta, sigma_i);
+    t4 = clock();
+    printf("combine: %lf\n", (double)(t4 - t3) / CLOCKS_PER_SEC);
+
+    SaveParam();
+
+    printf("sign total time： %lf\n", (double)(t4 - t0) / CLOCKS_PER_SEC );
     return 0;
 }

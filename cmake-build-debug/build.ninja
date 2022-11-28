@@ -70,6 +70,7 @@ build CMakeFiles/block_img_zhangwenbo.dir/sign.cpp.o: CXX_COMPILER__block_img_zh
 
 build block_img_zhangwenbo: CXX_EXECUTABLE_LINKER__block_img_zhangwenbo_Debug CMakeFiles/block_img_zhangwenbo.dir/main.cpp.o CMakeFiles/block_img_zhangwenbo.dir/sign.cpp.o
   FLAGS = -g -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.0.sdk
+  LINK_LIBRARIES = -lgmp  -lpbc
   OBJECT_DIR = CMakeFiles/block_img_zhangwenbo.dir
   POST_BUILD = :
   PRE_LINK = :
