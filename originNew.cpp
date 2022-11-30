@@ -1,6 +1,5 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <pbc/pbc.h>
-#include <pbc/pbc_field.h>
 #include "hashlibpp-master/build/include/hashlibpp.h"
 #include <iostream>
 #include <stdlib.h>
@@ -22,7 +21,10 @@ element_t gama1, gama2;
 pairing_t pairing;
 pbc_param_t par;
 
-void getParam() {
+element_t k1, k2;
+
+void getParam()
+{
     FILE* fp;
     fp = fopen("param100.txt", "r");
     fscanf(fp, "%d", &m);
@@ -84,7 +86,7 @@ string get_hash(char* s)
     return str;
 }
 
-//用于初始化pairing, par(参数param), g[N], sigma, sigma2, sigma_i[m],
+//用于初始化pairing, par(参数param), g[N], sigma, sigma2, sigma_i[m], 
 //h, u, gama1, gama2, alpha, sk, beta[l], y[l]
 void init()
 {
@@ -129,7 +131,10 @@ void init()
     //random choose
     set<int> s;
     srand(time(0));
-    cout << "Choose following images: " << endl;
+
+    clock_t t0, t1, t2, t3, t4, t5, t6, t7;
+    t0 = clock();
+    cout << "Choose following images: " << l << endl;
     for (int i = 0; i < l; i++) {
         int a = rand() % m;
         while (s.count(a)) {
@@ -138,6 +143,10 @@ void init()
         s.insert(a);
         choosed[i] = a;
     }
+    t1 = clock();
+    printf("ChalGen: %lf\n", (double)(t1 - t0) / CLOCKS_PER_SEC);
+
+
 
     //得到beta[l]
     for (int i = 0; i < l; i++) {
@@ -160,7 +169,38 @@ void init()
     }
 }
 
+// keygen 算法
 void Setup(element_t g0[MAX], element_t h0, element_t u0, element_t sk0, int N)
+{
+    //1. Generate a bilinear group tuple G = (G1, G2, GT , e, ϕ) such that G1, G2, GT have prime
+    // order p > 2^k. Choose generators g1, . . ., gN (random)← G1 \ {1} and h (random)← G2 \ {1}.
+    for (int i = 0; i < N; i++) {//g[N]
+        element_random(g0[i]);
+    }
+   
+    element_random(h0); //h
+
+    //2.  Choose α(random) ← Fp, and set u : = h^α.
+    // alpha 相当于论文里的 私钥x
+    element_random(alpha);
+    element_pow_zn(u0, h, alpha);
+
+    //4. Output the public key PK := (G, H, g1, . . . , gN , h, u) and the private key SK := α.
+    element_set(sk0, alpha);
+}
+
+// 将 element_t 转为 hash
+string get_hash_from_element(element_t element_in) {
+    unsigned char buffer[180];
+    element_to_bytes(buffer, element_in);
+    std::string str(reinterpret_cast<char*>(buffer));
+    hashwrapper* myWrapper = new sha256wrapper();
+    string result = myWrapper->getHashFromString(str);
+    return result;
+}
+
+// keygen mac算法
+void SetupNew(element_t g0[MAX], element_t h0, element_t u0, element_t sk0, int N)
 {
     //1. Generate a bilinear group tuple G = (G1, G2, GT , e, ϕ) such that G1, G2, GT have prime
     // order p > 2^k. Choose generators g1, . . ., gN (random)← G1 \ {1} and h (random)← G2 \ {1}.
@@ -170,11 +210,21 @@ void Setup(element_t g0[MAX], element_t h0, element_t u0, element_t sk0, int N)
 
     element_random(h0); //h
 
-    //2.  Choose α(random) ← Fp, and set u : = h^α.
-    element_random(alpha);
+    //2.  生成 k1、k2 ← Fq
+    element_init_G2(k1, pairing);
+    element_init_G2(k2, pairing);
+    element_random(k1);
+    element_random(k2);
+
+    //3. u ← G(k1)， 用 sha256充当伪随机生成器 G
+    cout << "get_hash_from_element" << endl;
+    string hash_k1 = get_hash_from_element(k1);
+    cout << "hash_k1" << hash_k1 << endl;
+
+
     element_pow_zn(u0, h, alpha);
 
-    //4. Output p, the public key PK := (G, H, g1, . . . , gN , h, u) and the private key SK := α.
+    //4. Output the public key PK := (G, H, g1, . . . , gN , h, u) and the private key SK := α.
     element_set(sk0, alpha);
 }
 
@@ -237,38 +287,67 @@ void Combine(element_t sigma0, element_t g[MAX], element_t h, element_t u, eleme
     }
 }
 
-// 保存签名的一些参数，以备后面 Verify 使用
-void SaveParam() {
-    FILE * fp;
+void Verify(element_t g[MAX], element_t h, element_t u, char* id, int m, element_t y[MAX], element_t sigma_)
+{
+    //Given a public key PK = (g1, . . . , gN , h, u), an identifier id, an integer m indicating the dimension of the space 
+    //being signed, a signature σ, and a vector y ∈ F N p , set n := N − m
+    //define γ1(PK, σ) = e (σ, h) and γ2(PK, id, m, y) = e(H(id, 1)^yn+1*……*H(id, m)^yn+m * g1^y1*……*gn^yn, u)
+    element_t sigma_h, sigma_g, h_tmp, g_tmp, hash_out_i;
+    element_init_G1(sigma_h, pairing);
+    element_init_G1(sigma_g, pairing);
+    element_init_G1(h_tmp, pairing);
+    element_init_G1(g_tmp, pairing);
+    element_init_G1(hash_out_i, pairing);
+    element_set1(gama1);
+    element_set1(gama2);
 
-    unsigned char *sigma_prime;
 
-    element_to_bytes(sigma_prime, sigma);
+    //get sigma_h = H(id, 1)^yn+1*……*H(id, m)^yn+m
+    for (int i = 0; i < m; i++) {        
+        char s[400];
+        sprintf(s, "%s%s%s%s%d", id, seller, buyer, times, i);
+        string str = get_hash(s);
+        int len = str.length();
+        char* p = new char[len];
+        str.copy(p, len, 0);
+        void* out = p;
+        element_from_hash(hash_out_i, out, 256);
+        element_pow_zn(h_tmp, hash_out_i, y[i + n]);
+        if (i == 0)
+            element_set(sigma_h, h_tmp);
+        else {
+            element_mul(sigma_h, sigma_h, h_tmp);
+        }
+    }
 
+    //get sigma_g = g1^y1*……*gn^yn
+    for (int i = 0; i < n; i++) {
+        element_pow_zn(g_tmp, g[i], y[i]);
+        if (i == 0)
+            element_set(sigma_g, g_tmp);
+        else
+            element_mul(sigma_g, sigma_g, g_tmp);
+    }
 
-    fp = fopen ("signedParam.txt", "w+");
-//    fprintf(fp, "%s", g);
-//    fprintf(fp, "%s", h);
-//    fprintf(fp, "%s", u);
-//    fprintf(fp, "%s", id);
-//    fprintf(fp, "%s", m);
-//    fprintf(fp, "%s", y);
-    element_fprintf(fp, "%B\n", sigma);
-//    fprintf(fp, "%s", sigma_prime);
-    cout << "save sigma param" << endl;
+    //get sigma2 = sigma_h * sigma_g = H(id, 1)^yn+1*……*H(id, m)^yn+m * g1^y1*……*gn^yn
+    element_set1(sigma2);
+    element_mul(sigma2, sigma_h, sigma_g);
 
-//    fprintf(fp, "%s", pairing);
-//    fprintf(fp, "%s", seller);
-//    fprintf(fp, "%s", buyer);
-//    fprintf(fp, "%s", times);
+    //get γ1(PK, σ) = e (σ, h)
+    element_pairing(gama1, sigma_, h);
+    //get γ2(PK, id, m, y) = e(σ2, u)
+    element_pairing(gama2, sigma2, u);
 
-    fclose(fp);
+    //If γ1(PK, σ) = γ2(PK, id, m, y) this algorithm outputs 1; otherwise it outputs 0.
+    cout << "verify result: " << !element_cmp(gama1, gama2) << endl;
 }
+
 
 int main(int argc, char** argv) {
 
     //获取数据
     getParam();
+    //inputParam();
 
     //计时
     clock_t t0, t1, t2, t3, t4, t5, t6, t7;
@@ -276,36 +355,50 @@ int main(int argc, char** argv) {
     t0 = clock();
 
     //初始化配对
-    cout << "init...\n" << endl;
+    cout << "init..." << endl;
     init();
     for (int i = 0; i < l; i++) {
         cout << choosed[i] << " ";
     }
+    cout << endl;
     t1 = clock();
     printf("init: %lf\n", (double)(t1 - t0) / CLOCKS_PER_SEC);
 
     //执行Setup操作，初始化元素
     cout << "Setup..." << endl;
-    Setup(g, h, u, sk, N);
+    SetupNew(g, h, u, sk, N);
     t2 = clock();
     printf("setup: %lf\n", (double)(t2 - t1) / CLOCKS_PER_SEC);
 
     //对每个图片签名
-    cout << "Sign..." << endl;
-    for (int i = 0; i < m; i++) {
-        Sign(sigma_i[i], sk, id, m, i);
-    }
-    t3 = clock();
-    printf("sign: %lf\n", (double)(t3 - t2) / CLOCKS_PER_SEC);
+//    cout << "Sign..." << endl;
+//    for (int i = 0; i < m; i++) {
+//        Sign(sigma_i[i], sk, id, m, i);
+//    }
+//    t3 = clock();
+//    printf("sign: %lf\n", (double)(t3 - t2) / CLOCKS_PER_SEC);
+//
+//    //组合图片签名
+//    cout << "Combine..." << endl;
+//    Combine(sigma, g, h, u, beta, sigma_i);
+//    t4 = clock();
+//    printf("combine: %lf\n", (double)(t4 - t3) / CLOCKS_PER_SEC);
+//
+//    //验证
+//    cout << "Verify..." << endl;
+//    Verify(g, h, u, id, m, y, sigma);
+//    t5 = clock();
+//    printf("verify: %lf\n", (double)(t5 - t4) / CLOCKS_PER_SEC);
 
-    //组合图片签名
-    cout << "Combine..." << endl;
-    Combine(sigma, g, h, u, beta, sigma_i);
-    t4 = clock();
-    printf("combine: %lf\n", (double)(t4 - t3) / CLOCKS_PER_SEC);
+    //writeSigns();
 
-    SaveParam();
-
-    printf("sign total time： %lf\n", (double)(t4 - t0) / CLOCKS_PER_SEC );
+//    cout << "Verify2" << endl;
+//    t6 = clock();
+//    for (int i = 0; i < m; i++) {
+//        Verify(g, h, u, id, m, v[i], sigma_i[i]);
+//    }
+    t7 = clock();   
+//    printf("verify2: %lf\n", (double)(t7- t6) / CLOCKS_PER_SEC);
+    printf("total time： %lf\n", (double)(t7 - t0) / CLOCKS_PER_SEC );
     return 0;
 }
