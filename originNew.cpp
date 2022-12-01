@@ -86,8 +86,7 @@ string get_hash(char* s)
     return str;
 }
 
-//用于初始化pairing, par(参数param), g[N], sigma, sigma2, sigma_i[m], 
-//h, u, gama1, gama2, alpha, sk, beta[l], y[l]
+//用于初始化pairing, par(参数param), g[N]
 void init()
 {
     N = n + m;
@@ -102,31 +101,8 @@ void init()
     for (int i = 0; i < N; i++) {//g[N]
         element_init_G1(g[i], pairing);
     }
-    element_init_G1(sigma, pairing);//sigma
-    element_init_G1(sigma2, pairing);//sigma2
-    for (int i = 0; i < m; i++) { //sigma_i[m]
-        element_init_G1(sigma_i[i], pairing);
-    }
-    element_init_G2(h, pairing);
-    element_init_G2(u, pairing);
-    element_init_GT(gama1, pairing);
-    element_init_GT(gama2, pairing);
-    element_init_Zr(alpha, pairing);
-    element_init_Zr(sk, pairing);
-    for (int i = 0; i < l; i++) {
-        element_init_Zr(beta[i], pairing);
-    }
-    //初始化哈希串
-    for (int i = 0; i < m; i++) {
-        element_init_G1(hash_out[i], pairing);
-        sprintf(info, "%s%s%s%s%d", id, seller, buyer, times, i);
-        string str = get_hash(info);
-        int len = str.length();
-        char* p = new char[len];
-        str.copy(p, len, 0);
-        void* out = p;
-        element_from_hash(hash_out[i], out, 256);
-    }
+    element_init_G1(k1, pairing);
+    element_init_G1(k2, pairing);
 
     //random choose
     set<int> s;
@@ -169,26 +145,6 @@ void init()
     }
 }
 
-// keygen 算法
-void Setup(element_t g0[MAX], element_t h0, element_t u0, element_t sk0, int N)
-{
-    //1. Generate a bilinear group tuple G = (G1, G2, GT , e, ϕ) such that G1, G2, GT have prime
-    // order p > 2^k. Choose generators g1, . . ., gN (random)← G1 \ {1} and h (random)← G2 \ {1}.
-    for (int i = 0; i < N; i++) {//g[N]
-        element_random(g0[i]);
-    }
-   
-    element_random(h0); //h
-
-    //2.  Choose α(random) ← Fp, and set u : = h^α.
-    // alpha 相当于论文里的 私钥x
-    element_random(alpha);
-    element_pow_zn(u0, h, alpha);
-
-    //4. Output the public key PK := (G, H, g1, . . . , gN , h, u) and the private key SK := α.
-    element_set(sk0, alpha);
-}
-
 // 将 element_t 转为 hash
 string get_hash_from_element(element_t element_in) {
     unsigned char buffer[180];
@@ -200,7 +156,7 @@ string get_hash_from_element(element_t element_in) {
 }
 
 // keygen mac算法
-void SetupNew(element_t g0[MAX], element_t h0, element_t u0, element_t sk0, int N)
+void Setup(element_t g0[MAX], element_t h0, element_t u0, element_t sk0, int N)
 {
     //1. Generate a bilinear group tuple G = (G1, G2, GT , e, ϕ) such that G1, G2, GT have prime
     // order p > 2^k. Choose generators g1, . . ., gN (random)← G1 \ {1} and h (random)← G2 \ {1}.
@@ -208,138 +164,33 @@ void SetupNew(element_t g0[MAX], element_t h0, element_t u0, element_t sk0, int 
         element_random(g0[i]);
     }
 
-    element_random(h0); //h
 
     //2.  生成 k1、k2 ← Fq
-    element_init_G2(k1, pairing);
-    element_init_G2(k2, pairing);
     element_random(k1);
     element_random(k2);
 
     //3. u ← G(k1)， 用 sha256充当伪随机生成器 G
-    cout << "get_hash_from_element" << endl;
     string hash_k1 = get_hash_from_element(k1);
-    cout << "hash_k1" << hash_k1 << endl;
+    cout << "hash_k1:\n" << hash_k1 << endl;
 
+    //4. b ← F(k2, (id, i))
 
-    element_pow_zn(u0, h, alpha);
-
-    //4. Output the public key PK := (G, H, g1, . . . , gN , h, u) and the private key SK := α.
-    element_set(sk0, alpha);
 }
 
 //给单独一张图片签名
 void Sign(element_t sigma0, element_t sk, char* id, int m, int index)
 {
-    cout << "sign:" << index << endl;
-    //Given a secret key SK = α, an identifier id ∈ {0, 1}^k , an integer m indicating the, dimension of the space
-    //being signed, and a vector v ∈ F N p , this algorithm sets n := N − m and outputs the signature σ
-    //σ := (H(id, 1)^vn+1*……*H(id, m)^vn+m * g1^v1*……*gn^vn)^α
-    element_t  sigma_h, sigma_g, sigma_hg, h_tmp, g_tmp;
 
-    element_init_G1(sigma_h, pairing);
-    element_init_G1(sigma_g, pairing);
-    element_init_G1(sigma_hg, pairing);
-    element_init_G1(h_tmp, pairing);
-    element_init_G1(g_tmp, pairing);
-
-    //sigma_h = H(id, 1)^vn+1*……*H(id, m)^vn+m
-    for (int i = 0; i < m; i++) {
-        element_pow_zn(h_tmp, hash_out[i], v[index][i + n]);
-        if (i == 0)
-            element_set(sigma_h, h_tmp);
-        else {
-            element_mul(sigma_h, sigma_h, h_tmp);
-        }
-    }
-
-    //sigma_g = g1^v1*……*gn^vn
-    for (int i = 0; i < n; i++) {
-        element_pow_zn(g_tmp, g[i], v[index][i]);
-        if (i == 0)
-            element_set(sigma_g, g_tmp);
-        else
-            element_mul(sigma_g, sigma_g, g_tmp);
-    }
-
-    //sigma_gh = H(id, 1)^vn+1*……*H(id, m)^vn+m * g1^v1*……*gn^vn
-    element_mul(sigma_hg, sigma_h, sigma_g);
-    //sigma = (H(id, 1)^vn+1*……*H(id, m)^vn+m * g1^v1*……*gn^vn)^α
-    element_pow_zn(sigma0, sigma_hg, sk);
-
-    /*element_printf("sigma_%d = %B\n", index, sigma0);
-    cout << endl;*/
 }
 
 void Combine(element_t sigma0, element_t g[MAX], element_t h, element_t u, element_t beta[MAX_M], element_t sigma_i[MAX_M])
 {
-    //Given a public key PK, a file identifier id, and l pairs consisting of a weight βi ∈ Fp and a signature σi , this algorithm outputs σ := σ1^β1*……*σl^βl .
-    for (int i = 0; i < l; i++) {
-        int choose = choosed[i];
-        element_t temp;
-        element_init_G1(temp, pairing);
-        // 公式 3，temp 是得出的值
-        element_pow_zn(temp, sigma_i[choose], beta[i]);
-        if (i == 0)
-            element_set(sigma0, temp);
-        else
-            element_mul(sigma0, sigma0, temp);
-    }
+
 }
 
 void Verify(element_t g[MAX], element_t h, element_t u, char* id, int m, element_t y[MAX], element_t sigma_)
 {
-    //Given a public key PK = (g1, . . . , gN , h, u), an identifier id, an integer m indicating the dimension of the space 
-    //being signed, a signature σ, and a vector y ∈ F N p , set n := N − m
-    //define γ1(PK, σ) = e (σ, h) and γ2(PK, id, m, y) = e(H(id, 1)^yn+1*……*H(id, m)^yn+m * g1^y1*……*gn^yn, u)
-    element_t sigma_h, sigma_g, h_tmp, g_tmp, hash_out_i;
-    element_init_G1(sigma_h, pairing);
-    element_init_G1(sigma_g, pairing);
-    element_init_G1(h_tmp, pairing);
-    element_init_G1(g_tmp, pairing);
-    element_init_G1(hash_out_i, pairing);
-    element_set1(gama1);
-    element_set1(gama2);
 
-
-    //get sigma_h = H(id, 1)^yn+1*……*H(id, m)^yn+m
-    for (int i = 0; i < m; i++) {        
-        char s[400];
-        sprintf(s, "%s%s%s%s%d", id, seller, buyer, times, i);
-        string str = get_hash(s);
-        int len = str.length();
-        char* p = new char[len];
-        str.copy(p, len, 0);
-        void* out = p;
-        element_from_hash(hash_out_i, out, 256);
-        element_pow_zn(h_tmp, hash_out_i, y[i + n]);
-        if (i == 0)
-            element_set(sigma_h, h_tmp);
-        else {
-            element_mul(sigma_h, sigma_h, h_tmp);
-        }
-    }
-
-    //get sigma_g = g1^y1*……*gn^yn
-    for (int i = 0; i < n; i++) {
-        element_pow_zn(g_tmp, g[i], y[i]);
-        if (i == 0)
-            element_set(sigma_g, g_tmp);
-        else
-            element_mul(sigma_g, sigma_g, g_tmp);
-    }
-
-    //get sigma2 = sigma_h * sigma_g = H(id, 1)^yn+1*……*H(id, m)^yn+m * g1^y1*……*gn^yn
-    element_set1(sigma2);
-    element_mul(sigma2, sigma_h, sigma_g);
-
-    //get γ1(PK, σ) = e (σ, h)
-    element_pairing(gama1, sigma_, h);
-    //get γ2(PK, id, m, y) = e(σ2, u)
-    element_pairing(gama2, sigma2, u);
-
-    //If γ1(PK, σ) = γ2(PK, id, m, y) this algorithm outputs 1; otherwise it outputs 0.
-    cout << "verify result: " << !element_cmp(gama1, gama2) << endl;
 }
 
 
@@ -366,7 +217,7 @@ int main(int argc, char** argv) {
 
     //执行Setup操作，初始化元素
     cout << "Setup..." << endl;
-    SetupNew(g, h, u, sk, N);
+    Setup(g, h, u, sk, N);
     t2 = clock();
     printf("setup: %lf\n", (double)(t2 - t1) / CLOCKS_PER_SEC);
 
