@@ -1,13 +1,16 @@
 ﻿#include <stdio.h>
 #include <pbc/pbc.h>
+#include <pbc/pbc_field.h>
 #include "hashlibpp-master/build/include/hashlibpp.h"
 #include <iostream>
 #include <stdlib.h>
 #include <vector>
 #include <set>
 #include <time.h>
+#include <typeinfo>
 using namespace std;
-const int MAX = 10020, MAX_M = 10100;
+//const int MAX = 10020, MAX_M = 10100;
+const int MAX = 256,MAX_M=10100;
 int n = 9000;
 char id[30], seller[100], buyer[100], times[100], info[400], filename[MAX_M][30];
 int m, l, N;
@@ -67,9 +70,12 @@ void get_vector(char* filename, int index) {
         if (i == index) element_set_si(v[index][j++], one);
         else element_set_si(v[index][j++], zero);
     }
+
+    element_t x;
+    cout<<"开始打印v"<<endl;
+    cout<<"打印完成"<<endl;
     fclose(fp);
 }
-
 //获得哈希值，输出为图片id和图片序号num，输出为指针out
 string get_hash(char* s)
 {
@@ -83,6 +89,7 @@ string get_hash(char* s)
         cout << "hash error" << endl;
         exit(0);
     }
+    cout<<"str类型为"<<typeid(str).name()<<endl;
     return str;
 }
 
@@ -199,7 +206,21 @@ int main(int argc, char** argv) {
     //获取数据
     getParam();
     //inputParam();
-
+    const char*s ="123456";
+    hashwrapper* myWrapper = new sha256wrapper();
+    string str;
+    void* out;
+    try {
+        str = myWrapper->getHashFromString(s);
+    }
+    catch (hlException& e) {
+        cout << "hash error" << endl;
+        exit(0);
+    }
+    element_t xx;
+    unsigned char *str1=(unsigned char*)str.c_str();
+    element_from_bytes(xx,str1);
+    //element_printf("转换后为%B",xx);
     //计时
     clock_t t0, t1, t2, t3, t4, t5, t6, t7;
 
