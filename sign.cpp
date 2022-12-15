@@ -16,7 +16,7 @@ int tmp;
 int choosed[MAX_M];
 element_t g[MAX];
 element_t h, u;
-element_t sigma, sigma2, sigma_i[MAX_M], hash_out[MAX_M];
+element_t sigma, sigma_i[MAX_M], hash_out[MAX_M];
 element_t alpha, sk, beta[MAX], y[MAX], v[MAX_M][MAX];
 element_t gama1, gama2;
 pairing_t pairing;
@@ -24,8 +24,10 @@ pbc_param_t par;
 
 void getParam() {
     FILE* fp;
-    fp = fopen("param100.txt", "r");
+    fp = fopen("paramVideoFrame.txt", "r");
+    // 图片总数量
     fscanf(fp, "%d", &m);
+    // 抽检的数量
     fscanf(fp, "%d", &l);
     for (int i = 0; i < m; i++) {
         fscanf(fp, "%s", filename[i]);
@@ -84,7 +86,7 @@ string get_hash(char* s)
     return str;
 }
 
-//用于初始化pairing, par(参数param), g[N], sigma, sigma2, sigma_i[m],
+//用于初始化pairing, par(参数param), g[N], sigma, sigma_i[m],
 //h, u, gama1, gama2, alpha, sk, beta[l], y[l]
 void init()
 {
@@ -101,7 +103,6 @@ void init()
         element_init_G1(g[i], pairing);
     }
     element_init_G1(sigma, pairing);//sigma
-    element_init_G1(sigma2, pairing);//sigma2
     for (int i = 0; i < m; i++) { //sigma_i[m]
         element_init_G1(sigma_i[i], pairing);
     }
@@ -241,11 +242,6 @@ void Combine(element_t sigma0, element_t g[MAX], element_t h, element_t u, eleme
 void SaveParam() {
     FILE * fp;
 
-    unsigned char *sigma_prime;
-
-    element_to_bytes(sigma_prime, sigma);
-
-
     fp = fopen ("signedParam.txt", "w+");
 //    fprintf(fp, "%s", g);
 //    fprintf(fp, "%s", h);
@@ -253,9 +249,11 @@ void SaveParam() {
 //    fprintf(fp, "%s", id);
 //    fprintf(fp, "%s", m);
 //    fprintf(fp, "%s", y);
+//    pbc_param_out_str(fp, par);
+    for (int i = 0; i < m; i++) {
+        element_fprintf(fp, "%B\n", sigma_i[i]);
+    }
     element_fprintf(fp, "%B\n", sigma);
-//    fprintf(fp, "%s", sigma_prime);
-    cout << "save sigma param" << endl;
 
 //    fprintf(fp, "%s", pairing);
 //    fprintf(fp, "%s", seller);
@@ -304,8 +302,13 @@ int main(int argc, char** argv) {
     t4 = clock();
     printf("combine: %lf\n", (double)(t4 - t3) / CLOCKS_PER_SEC);
 
-    SaveParam();
-
     printf("sign total time： %lf\n", (double)(t4 - t0) / CLOCKS_PER_SEC );
+
+    t5 = clock();
+    cout << "SaveParam..." << endl;
+    SaveParam();
+    cout << "SaveParam Finish！" << endl;
+    printf("save param time： %lf\n", (double)(t5 - t4) / CLOCKS_PER_SEC );
+
     return 0;
 }
