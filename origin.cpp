@@ -114,7 +114,7 @@ void init()
     set<int> s;
     srand(time(0));
 
-    clock_t t0, t1, t2, t3, t4, t5, t6, t7;
+    clock_t t0, t1;
     t0 = clock();
     cout << "Choose following images: " << l << endl;
     for (int i = 0; i < l; i++) {
@@ -216,6 +216,22 @@ void Combine(element_t sigma0, element_t g[MAX], element_t h, element_t u, eleme
 {
     //Given a public key PK, a file identifier id, and l pairs consisting of a weight βi ∈ Fp and a signature σi , this algorithm outputs σ := σ1^β1*……*σl^βl .
     for (int i = 0; i < l; i++) {
+        int choose = choosed[i];
+        element_t temp;
+        element_init_G1(temp, pairing);
+        // 公式 3，temp 是得出的值
+        element_pow_zn(temp, sigma_i[choose], beta[i]);
+        if (i == 0)
+            element_set(sigma0, temp);
+        else
+            element_mul(sigma0, sigma0, temp);
+    }
+}
+
+void CombineOtherType(element_t sigma0, element_t g[MAX], element_t h, element_t u, element_t beta[MAX_M], element_t sigma_i[MAX_M], int length)
+{
+    //Given a public key PK, a file identifier id, and l pairs consisting of a weight βi ∈ Fp and a signature σi , this algorithm outputs σ := σ1^β1*……*σl^βl .
+    for (int i = 0; i < length; i++) {
         int choose = choosed[i];
         element_t temp;
         element_init_G1(temp, pairing);
@@ -334,11 +350,45 @@ int main(int argc, char** argv) {
     t3 = clock();
     printf("sign: %lf\n", (double)(t3 - t2) / CLOCKS_PER_SEC);
 
+    element_t tmpSigma1, tmpSigma2, tmpSigma22, tmpSigma3, tmpSigma4, tmpSigma5, tmpSigma6, tmpSigma7,
+        tmpSigma8, tmpSigma9, tmpSigma10, tmpSigma11, tmpSigma12, tmpSigma13;
+    element_init_G1(tmpSigma1, pairing);
+    element_init_G1(tmpSigma2, pairing);
+    element_init_G1(tmpSigma22, pairing);
+    element_init_G1(tmpSigma3, pairing);
+    element_init_G1(tmpSigma4, pairing);
+    element_init_G1(tmpSigma5, pairing);
+    element_init_G1(tmpSigma6, pairing);
+    element_init_G1(tmpSigma7, pairing);
+    element_init_G1(tmpSigma8, pairing);
+    element_init_G1(tmpSigma9, pairing);
+    element_init_G1(tmpSigma10, pairing);
+    element_init_G1(tmpSigma11, pairing);
+    element_init_G1(tmpSigma12, pairing);
+    element_init_G1(tmpSigma13, pairing);
+
+    element_set(tmpSigma1, sigma);
+    element_set(tmpSigma2, sigma);
+    element_set(tmpSigma22, sigma);
+    element_set(tmpSigma3, sigma);
+    element_set(tmpSigma4, sigma);
+    element_set(tmpSigma5, sigma);
+    element_set(tmpSigma6, sigma);
+    element_set(tmpSigma7, sigma);
+    element_set(tmpSigma8, sigma);
+    element_set(tmpSigma9, sigma);
+    element_set(tmpSigma10, sigma);
+    element_set(tmpSigma11, sigma);
+    element_set(tmpSigma12, sigma);
+    element_set(tmpSigma13, sigma);
+
+
+    clock_t ttt3 = clock();
     //组合图片签名
     cout << "Combine..." << endl;
     Combine(sigma, g, h, u, beta, sigma_i);
     t4 = clock();
-    printf("combine: %lf\n", (double)(t4 - t3) / CLOCKS_PER_SEC);
+    printf("combine: %lf\n", (double)(t4 - ttt3) / CLOCKS_PER_SEC);
 
     //验证
     cout << "Verify..." << endl;
@@ -356,5 +406,77 @@ int main(int argc, char** argv) {
     t7 = clock();   
 //    printf("verify2: %lf\n", (double)(t7- t6) / CLOCKS_PER_SEC);
     printf("total time： %lf\n", (double)(t7 - t0) / CLOCKS_PER_SEC );
+
+    clock_t tt0 = clock();
+    cout << "CombineOtherType...1%" << endl;
+    CombineOtherType(tmpSigma1, g, h, u, beta, sigma_i, m / 100);
+    clock_t tt1 = clock();
+    printf("combine1: %lf\n", (double)(tt1 - tt0) / CLOCKS_PER_SEC);
+
+    cout << "CombineOtherType...5%" << endl;
+    CombineOtherType(tmpSigma2, g, h, u, beta, sigma_i, m / 100 * 5);
+    clock_t tt2 = clock();
+    printf("combine5: %lf\n", (double)(tt2 - tt1) / CLOCKS_PER_SEC);
+
+    cout << "CombineOtherType...10%" << endl;
+    CombineOtherType(tmpSigma22, g, h, u, beta, sigma_i, m / 100 * 10);
+    clock_t tt22 = clock();
+    printf("combine10: %lf\n", (double)(tt22 - tt2) / CLOCKS_PER_SEC);
+
+    cout << "CombineOtherType...15%" << endl;
+    CombineOtherType(tmpSigma3, g, h, u, beta, sigma_i, m / 100 * 15);
+    clock_t tt3 = clock();
+    printf("combine15: %lf\n", (double)(tt3 - tt22) / CLOCKS_PER_SEC);
+
+    cout << "CombineOtherType...20%" << endl;
+    CombineOtherType(tmpSigma4, g, h, u, beta, sigma_i, m / 100 * 20);
+    clock_t tt4 = clock();
+    printf("combine20: %lf\n", (double)(tt4 - tt3) / CLOCKS_PER_SEC);
+
+    cout << "CombineOtherType...25%" << endl;
+    CombineOtherType(tmpSigma5, g, h, u, beta, sigma_i, m / 100 * 25);
+    clock_t tt5 = clock();
+    printf("combine25: %lf\n", (double)(tt5 - tt4) / CLOCKS_PER_SEC);
+
+    cout << "CombineOtherType...30%" << endl;
+    CombineOtherType(tmpSigma6, g, h, u, beta, sigma_i, m / 100 * 30);
+    clock_t tt6 = clock();
+    printf("combine30: %lf\n", (double)(tt6 - tt5) / CLOCKS_PER_SEC);
+
+    cout << "CombineOtherType...40%" << endl;
+    CombineOtherType(tmpSigma7, g, h, u, beta, sigma_i, m / 100 * 40);
+    clock_t tt7 = clock();
+    printf("combine40: %lf\n", (double)(tt7 - tt6) / CLOCKS_PER_SEC);
+
+    cout << "CombineOtherType...50%" << endl;
+    CombineOtherType(tmpSigma8, g, h, u, beta, sigma_i, m / 100 * 50);
+    clock_t tt8 = clock();
+    printf("combine50: %lf\n", (double)(tt8 - tt7) / CLOCKS_PER_SEC);
+
+    cout << "CombineOtherType...60%" << endl;
+    CombineOtherType(tmpSigma9, g, h, u, beta, sigma_i, m / 100 * 60);
+    clock_t tt9 = clock();
+    printf("combine60: %lf\n", (double)(tt9 - tt8) / CLOCKS_PER_SEC);
+
+    cout << "CombineOtherType...70%" << endl;
+    CombineOtherType(tmpSigma10, g, h, u, beta, sigma_i, m / 100 * 70);
+    clock_t tt10 = clock();
+    printf("combine70: %lf\n", (double)(tt10 - tt9) / CLOCKS_PER_SEC);
+
+    cout << "CombineOtherType...80%" << endl;
+    CombineOtherType(tmpSigma11, g, h, u, beta, sigma_i, m / 100 * 80);
+    clock_t tt11 = clock();
+    printf("combine80: %lf\n", (double)(tt11 - tt10) / CLOCKS_PER_SEC);
+
+    cout << "CombineOtherType...90%" << endl;
+    CombineOtherType(tmpSigma12, g, h, u, beta, sigma_i, m / 100 * 90);
+    clock_t tt12 = clock();
+    printf("combine90: %lf\n", (double)(tt12 - tt11) / CLOCKS_PER_SEC);
+
+    cout << "CombineOtherType...100%" << endl;
+    CombineOtherType(tmpSigma13, g, h, u, beta, sigma_i, m);
+    clock_t tt13 = clock();
+    printf("combine100: %lf\n", (double)(tt13 - tt12) / CLOCKS_PER_SEC);
+
     return 0;
 }
